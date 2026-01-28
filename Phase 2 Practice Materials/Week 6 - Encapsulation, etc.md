@@ -1,1333 +1,1050 @@
-# Week 6: Encapsulation, Constructors, and Immutability
+# Week 6: Classes, Encapsulation, and Immutability
+
+## Overview (From Your Professor's Slides)
+- Designing good classes
+- Encapsulation and access control
+- Constructors and invariants
+- Introduction to immutability
 
 ## What You'll Learn This Week
-- **Encapsulation** - Hiding data with private/public
-- **Constructors** - Initializing objects properly
-- **Getters and Setters** - Controlled access to data
-- **Access Modifiers** - public, private, protected
+- **What is a class really?** - Represents a concept from the domain
+- **Class responsibilities** - What does a class know, do, and not do?
+- **Encapsulation** - Hide internal state, expose behavior
+- **Access Modifiers** - public, private, protected, package-private
+- **Constructors** - Initialize objects and enforce invariants
+- **Class Invariants** - Rules that must always be true
+- **The `this` keyword** - Referring to the current object
+- **Validation** - Fail fast principle
 - **Immutability** - Creating unchangeable objects
-- **Naming Conventions** - Writing professional code
-- **Packages** - Organizing your code
-- **Avoiding Anemic Objects** - Data + Behavior together
+- **Getters and Setters** - When to use them (and when NOT to)
 
 ---
 
-## Procedural vs Object-Oriented Thinking
+## Day 1: What Is a Class Really?
 
-### The Mindset Shift
+### Three Core Aspects (From Professor's Slides)
 
-**Procedural Thinking:** Focus on steps (what to do)
+A class:
+1. **Represents a concept from the domain**
+2. **Bundles data and behavior**
+3. **Protects its internal state**
+
+### Class Responsibilities
+
+When designing a class, ask these three questions:
+1. **What does this class know?** (Data/State)
+2. **What does this class do?** (Behavior/Methods)
+3. **What does this class NOT do?** (Boundaries)
+
+### Example Domain Concept: Task
+
+**From the slides:**
+
 ```java
-// Procedural: series of steps
-readStudentData();
-validateStudentData();
-calculateGPA();
-saveStudentData();
+public class Task {
+    public String description;
+    public boolean completed;
+}
 ```
 
-**Object-Oriented Thinking:** Focus on responsibilities (who does what)
-```java
-// OOP: objects with responsibilities
-Student student = new Student("Alice", 20);
-student.enrollInCourse(course);
-student.calculateGPA();
-student.save();
-```
+**What does Task know?**
+- Description (what the task is)
+- Completion status (done or not done)
 
-**Key Difference:**
-- Procedural: "What steps do I need to perform?"
-- OOP: "What objects exist and what are they responsible for?"
+**What does Task do?**
+- (Nothing yet - this is a problem!)
+
+**What does Task NOT do?**
+- Doesn't validate data
+- Doesn't control changes
+- This is an **anemic object** (zombie class - data without behavior)
 
 ---
 
-## Day 1-2: Encapsulation
+## Day 2: Problems With Public Fields
 
-### What is Encapsulation?
+### The Bad Example (From Slides)
 
-**Encapsulation** means:
-1. **Hiding** the internal data of an object
-2. **Controlling** access through methods
-3. **Protecting** data from invalid changes
-
-**Real-World Analogy:**
-Think of a TV remote:
-- You press buttons (public interface)
-- You don't mess with the internal circuits (private data)
-- The remote controls access to the TV's functions
-
-### The Problem: Public Variables
-
-**Bad Example (from your professor's slides):**
 ```java
-public class Student {
-    public String name;
-    public int id;
+public class Task {
+    public String description;
+    public boolean completed;
 }
 ```
 
-**Problems with this:**
+### Problems With This Design:
+
+**1. No Validation**
 ```java
-Student student = new Student();
-student.name = "";  // Empty name? That's invalid!
-student.id = -5;    // Negative ID? That makes no sense!
-student.id = 999999999;  // Someone can set anything!
+Task task = new Task();
+task.description = "";  // Empty description allowed!
+task.description = null;  // Null allowed!
 ```
 
-**Issues:**
-- No validation
-- Anyone can change anything
-- No control over the data
-- Hard to maintain
-- This creates **anemic objects** (zombie objects - data without behavior)
-
-### The Solution: Private Variables + Methods
-
-**Good Example (the "Better Version" from slides):**
+**2. No Control Over Changes**
 ```java
-public class Student {
-    private String name;  // Hidden from outside
-    private int id;       // Protected
+task.completed = true;
+task.completed = false;
+task.completed = true;  // Anyone can change anytime!
+```
+
+**3. Breaks Invariants**
+- An **invariant** is a rule that must ALWAYS be true
+- Example invariant: "description is never null or blank"
+- With public fields, we can't enforce this!
+
+**4. Hard to Refactor**
+- If you want to change how `description` works internally, you break all existing code
+- Everyone is directly accessing the field
+
+---
+
+## Day 3: Encapsulation
+
+### What is Encapsulation? (From Slides)
+
+**Three Principles:**
+1. **Hide internal state** - Make fields private
+2. **Expose behavior** - Provide public methods
+3. **Control access through methods** - Validate and protect
+
+### Visual Example
+
+**Before Encapsulation (BAD):**
+```java
+public class Task {
+    public String description;  // ❌ Anyone can access
+    public boolean completed;   // ❌ Anyone can change
+}
+
+Task task = new Task();
+task.description = "";  // Oops, empty!
+task.completed = true;  // No validation!
+```
+
+**After Encapsulation (GOOD):**
+```java
+public class Task {
+    private String description;  // ✅ Hidden/Protected
+    private boolean completed;   // ✅ Hidden/Protected
     
-    // Public method to access the name
-    public String getName() {
-        return name;
-    }
-    
-    // Public method to set the name (with validation!)
-    public void setName(String name) {
-        if (name != null && !name.isEmpty()) {
-            this.name = name;
-        } else {
-            System.out.println("Invalid name!");
-        }
+    // Controlled access through methods
+    public void markCompleted() {
+        completed = true;
     }
 }
+
+Task task = new Task("Study Java");
+task.markCompleted();  // ✅ Controlled behavior
+// task.description = "";  // ❌ ERROR! Can't access private field
 ```
 
-**Benefits:**
-- Data is protected
-- Validation happens in one place
-- Can change internal implementation later
-- Control over what's allowed
+---
 
-### Access Modifiers
+## Day 3-4: Access Modifiers in Java
 
-Java has four access modifiers:
+### The Four Access Levels (From Slides)
 
 | Modifier | Access Level |
 |----------|-------------|
-| `public` | Accessible from anywhere |
-| `private` | Only within the same class |
-| `protected` | Within package + subclasses (Week 8) |
-| (default) | Within the same package only |
+| `public` | Accessible everywhere |
+| `private` | Accessible only within the class |
+| `protected` | Accessible in subclasses and same package |
+| (default) | Package-private - accessible within the package |
 
-**For now, remember:**
-- **Instance variables:** Make them `private`
-- **Methods:** Make them `public` (if they're part of the interface)
+### Visibility Levels Explained
 
-### Complete Encapsulation Example
-
+#### 1. **private** (Most Restrictive)
 ```java
-public class BankAccount {
-    // Private data (encapsulated)
-    private String accountNumber;
-    private String owner;
-    private double balance;
+public class Task {
+    private String description;  // Only Task class can access
     
-    // Public methods (interface to interact with the account)
-    
-    public String getAccountNumber() {
-        return accountNumber;
-    }
-    
-    public String getOwner() {
-        return owner;
-    }
-    
-    public double getBalance() {
-        return balance;
-    }
-    
-    public void setOwner(String owner) {
-        if (owner != null && !owner.isEmpty()) {
-            this.owner = owner;
-        }
-    }
-    
-    // Business logic methods
-    public void deposit(double amount) {
-        if (amount > 0) {
-            balance += amount;
-            System.out.println("Deposited: $" + amount);
-        } else {
-            System.out.println("Invalid deposit amount!");
-        }
-    }
-    
-    public void withdraw(double amount) {
-        if (amount > 0 && amount <= balance) {
-            balance -= amount;
-            System.out.println("Withdrew: $" + amount);
-        } else {
-            System.out.println("Invalid withdrawal!");
-        }
+    private void validateDescription(String desc) {
+        // Only methods inside Task can call this
     }
 }
 ```
 
-**Key Principle: Behavior Moves With Data**
+#### 2. **package-private** (No Modifier - Default)
+```java
+class Task {  // No public - package-private
+    String description;  // No modifier - package-private
+    
+    void helper() {  // Package-private method
+        // Accessible to classes in same package
+    }
+}
+```
 
-Notice how `deposit()` and `withdraw()` are in the `BankAccount` class, not in some separate "BankAccountManager" class. The data (balance) and the behavior (deposit/withdraw) belong together!
+#### 3. **protected** (For Subclasses)
+```java
+public class Task {
+    protected void validate() {
+        // Accessible in subclasses and same package
+    }
+}
+```
 
-**Avoid Anemic Objects:**
-- ❌ **Anemic Object:** Just data, no behavior (like a zombie 🧟)
-- ✅ **Rich Object:** Data + behavior that operates on that data
+#### 4. **public** (Least Restrictive)
+```java
+public class Task {
+    public void markCompleted() {  // Anyone can call
+        // Public interface
+    }
+}
+```
+
+### Why private Is the Default Choice (From Slides)
+
+**Three Reasons:**
+1. **Protects invariants** - Rules stay enforced
+2. **Reduces coupling** - Other code doesn't depend on internals
+3. **Enables safe refactoring** - Can change internals without breaking other code
 
 ---
 
-## Day 3-4: Constructors
-
-### What is a Constructor?
-
-A **constructor** is a special method that:
-1. Has the **same name as the class**
-2. Has **no return type** (not even void)
-3. **Initializes** the object when it's created
-4. Runs automatically when you use `new`
-
-### The Problem: Uninitialized Objects
-
-**Without constructor:**
-```java
-public class Student {
-    private String name;
-    private int id;
-    
-    // No constructor
-}
-
-// Using it:
-Student student = new Student();
-// name is null, id is 0
-// We have to manually set everything:
-student.setName("Alice");
-student.setId(12345);
-// Tedious and error-prone!
-```
-
-### The Solution: Constructor
-
-```java
-public class Student {
-    private String name;
-    private int id;
-    
-    // Constructor!
-    public Student(String name, int id) {
-        this.name = name;
-        this.id = id;
-    }
-    
-    public String getName() {
-        return name;
-    }
-    
-    public int getId() {
-        return id;
-    }
-}
-
-// Using it:
-Student student = new Student("Alice", 12345);
-// Done! Object is fully initialized in one line
-```
-
-### Constructor Syntax
-
-```java
-public ClassName(parameters) {
-    // Initialization code
-}
-```
-
-**Example:**
-```java
-public class Person {
-    private String name;
-    private int age;
-    
-    // Constructor
-    public Person(String name, int age) {
-        this.name = name;
-        this.age = age;
-    }
-}
-```
-
-### Default Constructor
-
-If you don't write ANY constructor, Java provides a **default constructor**:
-
-```java
-public class Person {
-    private String name;
-    private int age;
-}
-
-// Java automatically creates:
-// public Person() { }
-
-Person p = new Person();  // Works!
-```
-
-**Important:** If you write ANY constructor, the default one goes away!
-
-```java
-public class Person {
-    private String name;
-    
-    public Person(String name) {
-        this.name = name;
-    }
-}
-
-Person p = new Person();  // ❌ ERROR! No default constructor
-Person p = new Person("Alice");  // ✅ Works!
-```
-
-### Constructor Overloading
-
-You can have **multiple constructors** with different parameters:
-
-```java
-public class Student {
-    private String name;
-    private int id;
-    private double gpa;
-    
-    // Constructor 1: All parameters
-    public Student(String name, int id, double gpa) {
-        this.name = name;
-        this.id = id;
-        this.gpa = gpa;
-    }
-    
-    // Constructor 2: Just name and id
-    public Student(String name, int id) {
-        this.name = name;
-        this.id = id;
-        this.gpa = 0.0;  // Default GPA
-    }
-    
-    // Constructor 3: Just name
-    public Student(String name) {
-        this.name = name;
-        this.id = 0;
-        this.gpa = 0.0;
-    }
-}
-
-// Using them:
-Student s1 = new Student("Alice", 12345, 3.8);
-Student s2 = new Student("Bob", 67890);
-Student s3 = new Student("Charlie");
-```
-
-### Constructor Chaining
-
-One constructor can call another using `this()`:
-
-```java
-public class Student {
-    private String name;
-    private int id;
-    private double gpa;
-    
-    // Main constructor
-    public Student(String name, int id, double gpa) {
-        this.name = name;
-        this.id = id;
-        this.gpa = gpa;
-    }
-    
-    // This constructor calls the main one
-    public Student(String name, int id) {
-        this(name, id, 0.0);  // Calls the 3-parameter constructor
-    }
-    
-    public Student(String name) {
-        this(name, 0, 0.0);  // Calls the 3-parameter constructor
-    }
-}
-```
-
-### Validation in Constructors
-
-**Always validate in constructors!**
-
-```java
-public class BankAccount {
-    private String accountNumber;
-    private double balance;
-    
-    public BankAccount(String accountNumber, double initialBalance) {
-        if (accountNumber == null || accountNumber.isEmpty()) {
-            throw new IllegalArgumentException("Account number cannot be empty");
-        }
-        if (initialBalance < 0) {
-            throw new IllegalArgumentException("Initial balance cannot be negative");
-        }
-        
-        this.accountNumber = accountNumber;
-        this.balance = initialBalance;
-    }
-}
-```
-
-### Complete Constructor Example
-
-```java
-public class Car {
-    private String brand;
-    private String model;
-    private int year;
-    private double price;
-    
-    // Full constructor with validation
-    public Car(String brand, String model, int year, double price) {
-        if (brand == null || brand.isEmpty()) {
-            throw new IllegalArgumentException("Brand cannot be empty");
-        }
-        if (year < 1900 || year > 2025) {
-            throw new IllegalArgumentException("Invalid year");
-        }
-        if (price < 0) {
-            throw new IllegalArgumentException("Price cannot be negative");
-        }
-        
-        this.brand = brand;
-        this.model = model;
-        this.year = year;
-        this.price = price;
-    }
-    
-    // Convenient constructor with default price
-    public Car(String brand, String model, int year) {
-        this(brand, model, year, 0.0);
-    }
-    
-    // Getters
-    public String getBrand() {
-        return brand;
-    }
-    
-    public String getModel() {
-        return model;
-    }
-    
-    public int getYear() {
-        return year;
-    }
-    
-    public double getPrice() {
-        return price;
-    }
-    
-    // Setter with validation
-    public void setPrice(double price) {
-        if (price >= 0) {
-            this.price = price;
-        }
-    }
-    
-    public void displayInfo() {
-        System.out.println(year + " " + brand + " " + model + " - $" + price);
-    }
-}
-```
-
----
-
-## Day 5: Getters and Setters
-
-### What are Getters and Setters?
-
-**Getter:** A method that returns the value of a private variable
-**Setter:** A method that sets the value of a private variable
-
-### Why Use Them?
-
-Instead of public variables:
-```java
-public class Person {
-    public String name;  // ❌ Anyone can change this!
-}
-
-person.name = "";  // Oops, set to empty!
-```
-
-Use private variables with getters/setters:
-```java
-public class Person {
-    private String name;  // ✅ Protected
-    
-    public String getName() {
-        return name;
-    }
-    
-    public void setName(String name) {
-        if (name != null && !name.isEmpty()) {
-            this.name = name;
-        }
-    }
-}
-```
-
-### Naming Conventions (From Your Professor's Slides)
-
-**Getters:**
-- Pattern: `get` + `VariableName` (capitalized)
-- Example: `getName()`, `getAge()`, `getBalance()`
-
-**Setters:**
-- Pattern: `set` + `VariableName` (capitalized)
-- Example: `setName()`, `setAge()`, `setBalance()`
-
-**Boolean Getters:**
-- Pattern: `is` + `VariableName` (capitalized)
-- Example: `isCompleted()`, `isActive()`, `hasPermission()`
-
-### Complete Example
+## Example: Field Visibility (From Slides)
 
 ```java
 public class Task {
     private String description;
     private boolean completed;
-    private int priority;
-    
-    public Task(String description) {
-        this.description = description;
-        this.completed = false;
-        this.priority = 1;
-    }
-    
-    // Getter for description
-    public String getDescription() {
-        return description;
-    }
-    
-    // Setter for description (with validation)
-    public void setDescription(String description) {
-        if (description != null && !description.isEmpty()) {
-            this.description = description;
-        }
-    }
-    
-    // Boolean getter (uses "is" prefix)
-    public boolean isCompleted() {
-        return completed;
-    }
-    
-    // Method to mark complete (better than setter!)
+}
+```
+
+**Key Point:** Fields should be `private` by default!
+
+---
+
+## Example: Method Visibility (From Slides)
+
+```java
+public class Task {
+    // PUBLIC method - part of the interface
     public void markCompleted() {
-        this.completed = true;
+        completed = true;
     }
     
-    public int getPriority() {
-        return priority;
-    }
-    
-    public void setPriority(int priority) {
-        if (priority >= 1 && priority <= 5) {
-            this.priority = priority;
+    // PRIVATE method - internal helper
+    private void validateDescription(String desc) {
+        if (desc == null || desc.isBlank()) {
+            throw new IllegalArgumentException();
         }
     }
 }
 ```
 
-### When NOT to Use Setters
+**Key Insight:**
+- **Public methods** = What the class DOES (behavior exposed to users)
+- **Private methods** = HOW the class does it (internal implementation)
 
-Sometimes, setters don't make sense:
+---
+
+## Example: Package Private Visibility (From Slides)
 
 ```java
-public class BankAccount {
-    private String accountNumber;
-    private double balance;
-    
-    // NO setter for accountNumber - it should never change!
-    public String getAccountNumber() {
-        return accountNumber;
+public class TaskService {
+    public void addTask(Task task) {
+        // package private - only classes in same package can call
     }
+}
+```
+
+**When to use package-private:**
+- Helper classes that work together
+- Internal APIs not meant for external use
+- Testing support methods
+
+---
+
+## Example: Protected Visibility (From Slides)
+
+```java
+protected void validate() {
+    // for subclasses
+}
+```
+
+**When to use protected:**
+- Methods that subclasses need to override or access
+- We'll learn more about this in Week 8 (Inheritance)
+
+---
+
+## Common Access Modifier Mistakes (From Slides)
+
+### 1. Making Everything Public
+```java
+// ❌ BAD
+public class Task {
+    public String description;
+    public boolean completed;
+    public void helper1() { }
+    public void helper2() { }
+    public void helper3() { }
+}
+```
+
+**Problem:** Everything is exposed! No encapsulation, no control.
+
+### 2. Using Protected Instead of Composition
+```java
+// ❌ Often misused
+protected String internalData;
+```
+
+**Problem:** Protected is for inheritance relationships, not a shortcut for package access.
+
+### 3. Exposing Fields Directly
+```java
+// ❌ BAD
+public class Task {
+    public String description;  // Direct field access
+}
+
+// ✅ GOOD
+public class Task {
+    private String description;  // Hidden
     
-    // NO direct setter for balance - use deposit/withdraw instead!
-    public double getBalance() {
-        return balance;
-    }
-    
-    // Use specific methods instead
-    public void deposit(double amount) {
-        if (amount > 0) {
-            balance += amount;
-        }
-    }
-    
-    public void withdraw(double amount) {
-        if (amount > 0 && amount <= balance) {
-            balance -= amount;
-        }
+    public String getDescription() {  // Controlled access
+        return description;
     }
 }
 ```
 
 ---
 
-## Day 6-7: Immutability
+## Access Modifiers and Encapsulation (From Slides)
 
-### What is Immutability?
+**Key Principles:**
+1. **Access modifiers enforce boundaries** - They're the walls protecting your data
+2. **Encapsulation is impossible without them** - Can't hide what's public
+3. **Visibility reflects responsibility** - Public = "This is what I promise to do"
 
-An **immutable object** is an object whose state **cannot be changed** after it's created.
+---
 
-### Why Immutability?
+## Day 4-5: Adding Behavior (From Slides)
 
-**Benefits:**
-1. **Thread-safe** - Multiple threads can use it without problems
-2. **Predictable** - Object won't change unexpectedly
-3. **Cacheable** - Safe to reuse
-4. **Simpler** - No need to worry about changes
-
-**Real-World Examples:**
-- `String` in Java is immutable
-- Numbers are immutable
-- Dates (in modern Java) are immutable
-
-### Creating Immutable Classes
-
-**Rules for Immutable Classes:**
-1. Make all fields `private` and `final`
-2. No setters!
-3. Initialize all fields in constructor
-4. Don't expose mutable objects
-
-### Example 1: Immutable Point
+### The Better Version
 
 ```java
-public class Point {
-    private final int x;
-    private final int y;
+public class Task {
+    private String description;
+    private boolean completed;
     
-    public Point(int x, int y) {
-        this.x = x;
-        this.y = y;
+    // Add behavior!
+    public void markCompleted() {
+        completed = true;
     }
+}
+```
+
+**Key Principle:** Data and behavior belong together!
+
+### Why This Is Better:
+
+**Before (Anemic):**
+```java
+Task task = new Task();
+task.completed = true;  // Just setting data
+```
+
+**After (Rich Object):**
+```java
+Task task = new Task("Study Java");
+task.markCompleted();  // Meaningful behavior!
+```
+
+The method name `markCompleted()` tells you WHAT is happening, not just HOW.
+
+
+---
+
+## Day 5: Getter Methods (From Slides)
+
+### Use Getters Carefully
+
+**From professor:** "Getters are not evil, but should be used intentionally."
+
+```java
+public String getDescription() {
+    return description;
+}
+
+public boolean isCompleted() {
+    return completed;
+}
+```
+
+**When to use getters:**
+- When external code needs to READ the data
+- For boolean: use `is` prefix (isCompleted, isActive, isValid)
+- For other types: use `get` prefix (getDescription, getName)
+
+**When NOT to use getters:**
+- Don't automatically add getters for every field!
+- Ask: "Does external code really need this?"
+- Alternative: Provide behavior instead
+
+### Example: Think About Behavior First
+
+```java
+// ❌ DON'T DO THIS
+public double getBalance() {
+    return balance;
+}
+// Then somewhere else: if (account.getBalance() > 100) { ... }
+
+// ✅ BETTER: Provide behavior
+public boolean hasMinimumBalance(double minimum) {
+    return balance >= minimum;
+}
+// Use: if (account.hasMinimumBalance(100)) { ... }
+```
+
+---
+
+## Day 5: Avoiding Setters by Default (From Slides)
+
+### Why Setters Are Problematic
+
+**From professor's slides:**
+- Setters expose internal state
+- They weaken encapsulation
+- Prefer meaningful methods
+
+### The Problem
+
+```java
+// ❌ BAD: Generic setter
+public void setCompleted(boolean completed) {
+    this.completed = completed;
+}
+
+// Usage:
+task.setCompleted(true);  // What does this mean?
+task.setCompleted(false); // Why is this false now?
+```
+
+### The Solution: Meaningful Method Names (From Slides)
+
+```java
+// ✅ GOOD: Meaningful methods
+public void markCompleted() {
+    completed = true;
+}
+
+public void markIncomplete() {
+    completed = false;
+}
+
+public void rename(String newDescription) {
+    validateDescription(newDescription);
+    description = newDescription;
+}
+
+public void updateDescription(String newDescription) {
+    validateDescription(newDescription);
+    description = newDescription;
+}
+```
+
+**Benefits:**
+- Clear intention: `markCompleted()` vs `setCompleted(true)`
+- Can add validation and business logic
+- Makes code more readable
+
+---
+
+## Quick Check (From Slides)
+
+**Which is better?**
+
+```java
+// Option 1
+public void setBalance(double balance) {
+    this.balance = balance;
+}
+
+// Option 2
+public void deposit(double amount) {
+    // validation and logic
+}
+
+public void withdraw(double amount) {
+    // validation and logic
+}
+```
+
+**Answer:** Option 2! 
+
+**Why?**
+- `deposit()` and `withdraw()` have clear meaning
+- They can enforce rules (no negative deposits, no overdrafts)
+- `setBalance()` is too generic and allows anything
+
+---
+
+## Encapsulation Benefits (From Slides)
+
+### Three Key Benefits:
+
+1. **Easier to change internals**
+   - Change implementation without breaking external code
+   - Example: Change from storing balance as cents to dollars
+
+2. **Safer code**
+   - Validation in one place
+   - Invariants always enforced
+   - No invalid states possible
+
+3. **Clear responsibilities**
+   - Each class has a well-defined interface
+   - Easy to understand what class does
+   - Easy to test
+
+---
+
+## Day 6-7: Constructors, Validation, and Immutability
+
+### Lecture Goals (From Slides)
+- Understand constructors
+- Enforce invariants
+- Learn immutability
+- Introduce records
+
+---
+
+## What is a Class Invariant? (From Slides)
+
+### Definition
+
+**A class invariant is a condition that must hold for every valid instance of a class, before and after every public method call.**
+
+**Important clarifications:**
+- An invariant is NOT a field
+- Fields store state
+- Invariants constrain that state
+- An invariant is a RULE about the state that must always be true
+
+### Examples of Class Invariants (From Slides)
+
+**For a Task class:**
+- `description` is never null or blank
+- `completed` is either true or false (trivial, but still a rule)
+
+**For a BankAccount:**
+- `balance` is never negative
+
+**For a Person:**
+- `age` is non-negative
+- `name` is not empty
+
+---
+
+## What Is a Constructor? (From Slides)
+
+### Three Purposes:
+
+1. **Initializes object state** - Sets up the object
+2. **Enforces invariants** - Makes sure rules are true from the start
+3. **Runs exactly once** - When object is created with `new`
+
+---
+
+## Basic Constructor Example (From Slides)
+
+```java
+public class Task {
+    private String description;
+    private boolean completed;
     
-    public int getX() {
-        return x;
-    }
-    
-    public int getY() {
-        return y;
-    }
-    
-    // No setters! Object cannot change
-    
-    // If you need a "modified" version, return a NEW object
-    public Point move(int dx, int dy) {
-        return new Point(x + dx, y + dy);
+    public Task(String description) {
+        this.description = description;
+        this.completed = false;
     }
 }
 ```
 
 **Using it:**
 ```java
-Point p1 = new Point(5, 10);
-System.out.println(p1.getX());  // 5
-
-// Can't modify p1!
-// p1.setX(20);  // ❌ No such method!
-
-// To get a different point, create a new one
-Point p2 = p1.move(3, 5);
-System.out.println(p2.getX());  // 8
-System.out.println(p1.getX());  // Still 5! Original unchanged
-```
-
-### The `final` Keyword
-
-`final` means "cannot be changed":
-
-**For variables:**
-```java
-final int MAX_SIZE = 100;
-MAX_SIZE = 200;  // ❌ ERROR! Cannot change
-
-final String name = "Alice";
-name = "Bob";  // ❌ ERROR!
-```
-
-**For instance variables:**
-```java
-public class Person {
-    private final String name;  // Must be set in constructor
-    
-    public Person(String name) {
-        this.name = name;  // OK - set once
-    }
-    
-    public void changeName(String newName) {
-        this.name = newName;  // ❌ ERROR! Cannot change final field
-    }
-}
-```
-
-### Example 2: Immutable Date
-
-```java
-public class Date {
-    private final int day;
-    private final int month;
-    private final int year;
-    
-    public Date(int day, int month, int year) {
-        // Validation
-        if (day < 1 || day > 31) {
-            throw new IllegalArgumentException("Invalid day");
-        }
-        if (month < 1 || month > 12) {
-            throw new IllegalArgumentException("Invalid month");
-        }
-        if (year < 1900) {
-            throw new IllegalArgumentException("Invalid year");
-        }
-        
-        this.day = day;
-        this.month = month;
-        this.year = year;
-    }
-    
-    public int getDay() {
-        return day;
-    }
-    
-    public int getMonth() {
-        return month;
-    }
-    
-    public int getYear() {
-        return year;
-    }
-    
-    // Return a NEW date, don't modify this one
-    public Date addDays(int days) {
-        // Simplified - just adds to day
-        return new Date(day + days, month, year);
-    }
-    
-    @Override
-    public String toString() {
-        return month + "/" + day + "/" + year;
-    }
-}
-```
-
-### String Immutability
-
-`String` is immutable in Java:
-
-```java
-String s1 = "Hello";
-String s2 = s1.toUpperCase();  // Creates NEW string
-
-System.out.println(s1);  // "Hello" - unchanged!
-System.out.println(s2);  // "HELLO" - new string
-```
-
-**This is why we use:**
-```java
-s1 = s1 + " World";  // Creates new string, assigns to s1
-// Old "Hello" string is unchanged (and garbage collected)
-```
-
-### Mutable vs Immutable
-
-**Mutable Example:**
-```java
-public class Counter {
-    private int count;
-    
-    public Counter(int count) {
-        this.count = count;
-    }
-    
-    public void increment() {
-        count++;  // ✅ Changes the object
-    }
-    
-    public int getCount() {
-        return count;
-    }
-}
-
-Counter c = new Counter(5);
-c.increment();
-c.increment();
-System.out.println(c.getCount());  // 7 - object changed!
-```
-
-**Immutable Example:**
-```java
-public class Counter {
-    private final int count;
-    
-    public Counter(int count) {
-        this.count = count;
-    }
-    
-    public Counter increment() {
-        return new Counter(count + 1);  // Returns NEW object
-    }
-    
-    public int getCount() {
-        return count;
-    }
-}
-
-Counter c1 = new Counter(5);
-Counter c2 = c1.increment();
-Counter c3 = c2.increment();
-System.out.println(c1.getCount());  // 5 - unchanged!
-System.out.println(c3.getCount());  // 7 - new object
+Task task = new Task("Study Java");
+// description is set
+// completed is false
+// Object is fully initialized!
 ```
 
 ---
 
-## Java Naming Conventions
+## What is "this"? (From Slides)
 
-### Class Names: PascalCase
+### Four Uses of `this`:
 
-Every word capitalized, no spaces:
-```java
-public class BankAccount { }
-public class StudentRecord { }
-public class TaskManager { }
-public class ShoppingCart { }
-```
+1. **Refers to the current object**
+   ```java
+   public Task(String description) {
+       this.description = description;
+       // this.description = field
+       // description = parameter
+   }
+   ```
 
-### Method and Variable Names: camelCase
+2. **Disambiguates fields from parameters**
+   ```java
+   // Without this:
+   public Task(String description) {
+       description = description;  // ❌ Confusing! Which is which?
+   }
+   
+   // With this:
+   public Task(String description) {
+       this.description = description;  // ✅ Clear!
+   }
+   ```
 
-First word lowercase, rest capitalized:
-```java
-// Methods
-public void calculateTotal() { }
-public void addTask() { }
-public void markComplete() { }
+3. **Allows method chaining** (We'll see this later)
+   ```java
+   return this;
+   ```
 
-// Variables
-int accountBalance;
-String firstName;
-double totalPrice;
-```
-
-### Constants: UPPER_SNAKE_CASE
-
-All uppercase, words separated by underscores:
-```java
-public static final int MAX_RETRIES = 3;
-public static final double DEFAULT_TIMEOUT_MS = 1000.0;
-public static final String API_KEY = "abc123";
-```
-
-### Packages: lowercase
-
-All lowercase, often reverse domain:
-```java
-package com.example.app;
-package edu.university.course;
-package org.company.project;
-```
-
-### Naming Guidelines That Improve Design
-
-**Classes - Use Nouns:**
-✅ `Task`, `Invoice`, `Repository`, `Student`
-❌ `DoSomething`, `Manager`, `Helper`
-
-**Methods - Use Verbs:**
-✅ `addTask()`, `removeTask()`, `markComplete()`
-❌ `task()`, `data()`, `thing()`
-
-**Boolean Variables - Use "is" or "has":**
-✅ `isCompleted`, `hasPermission`, `isActive`
-❌ `completed`, `permission`, `active`
-
-**Be Specific:**
-✅ `TaskList` (clear what kind of list)
-❌ `List` (too generic)
-
-**Avoid Abbreviations:**
-✅ `calculateTotalAmount()`
-❌ `calcTotAmt()`
-
-**Exception: Universally Known Abbreviations:**
-✅ `URL`, `HTTP`, `ID`, `HTML`
-
-### Common Naming Pitfalls
-
-❌ **Vague names:**
-- `Manager`, `Helper`, `Util`, `Data`
-- These tell you nothing about what the class does!
-
-❌ **Overloaded meanings:**
-- `handle()`, `process()`, `doIt()`
-- What do these actually do?
-
-❌ **Single letter names (outside loops):**
-- `x`, `temp`, `a`, `b`
-- Use meaningful names!
-
-❌ **Leaking implementation details:**
-- `ArrayTaskStorage` when you mean `TaskRepository`
-- Don't expose how it's implemented in the name
-
-### Mini Exercise (From Slides)
-
-Rename these to improve clarity:
-
-❌ `doIt()` → ✅ `processPayment()`, `calculateTotal()`, `sendEmail()`
-❌ `Data1` → ✅ `StudentData`, `CustomerRecord`, `OrderInfo`
-❌ `ThingManager` → ✅ `TaskManager`, `UserController`, `OrderProcessor`
-❌ `tList` → ✅ `taskList`, `todoItems`, `pendingTasks`
+4. **Used to call another constructor** (Constructor chaining)
+   ```java
+   public Task(String description) {
+       this(description, false);  // Calls other constructor
+   }
+   ```
 
 ---
 
-## Packages
+## Validation in Constructors (From Slides)
 
-### What are Packages?
+### Follow the "Fail Fast" Principle!
 
-**Packages** are folders that organize your classes, like folders organize files on your computer.
+**From professor:** "Fail fast means detecting invalid input or invalid state as early as possible and stopping execution immediately, usually by throwing an exception."
 
-### Why Use Packages?
-
-1. **Organization** - Group related classes
-2. **Avoid name conflicts** - Two classes can have same name in different packages
-3. **Access control** - Package-level visibility
-
-### Package Naming Convention
-
-Use reverse domain name:
-```
-com.company.project
-edu.university.course
-org.opensource.library
-```
-
-### Package Structure Example
-
-```
-src/
-  └── edu/
-      └── university/
-          └── taskmanager/
-              ├── model/
-              │   ├── Task.java
-              │   └── TaskList.java
-              ├── controller/
-              │   └── TaskController.java
-              └── Main.java
-```
-
-### Declaring a Package
-
-At the **very top** of your Java file:
+### Example from Slides:
 
 ```java
-package edu.university.taskmanager.model;
+public Task(String description) {
+    if (description == null || description.isBlank()) {
+        throw new IllegalArgumentException();
+    }
+    this.description = description;
+}
+```
 
+**Why fail fast?**
+- Catch errors immediately at creation time
+- Don't let invalid objects exist
+- Makes debugging easier (error happens where problem is)
+- Protects invariants from the very beginning
+
+### Better Validation Example:
+
+```java
 public class Task {
     private String description;
     private boolean completed;
     
-    // ...
-}
-```
-
-### Using Classes from Other Packages
-
-**Option 1: Import**
-```java
-package edu.university.taskmanager;
-
-import edu.university.taskmanager.model.Task;
-import edu.university.taskmanager.model.TaskList;
-
-public class Main {
-    public static void main(String[] args) {
-        Task task = new Task("Study OOP");
-        TaskList list = new TaskList();
+    public Task(String description) {
+        validateDescription(description);
+        this.description = description;
+        this.completed = false;
     }
-}
-```
-
-**Option 2: Fully Qualified Name**
-```java
-package edu.university.taskmanager;
-
-public class Main {
-    public static void main(String[] args) {
-        edu.university.taskmanager.model.Task task = 
-            new edu.university.taskmanager.model.Task("Study OOP");
+    
+    private void validateDescription(String desc) {
+        if (desc == null || desc.isBlank()) {
+            throw new IllegalArgumentException(
+                "Description cannot be null or blank"
+            );
+        }
+    }
+    
+    public void updateDescription(String newDescription) {
+        validateDescription(newDescription);  // Reuse validation!
+        this.description = newDescription;
     }
 }
 ```
 
 ---
 
-## Records (Modern Java Feature)
+## Complete Encapsulated Class Example
 
-### What are Records?
-
-A **record** is a special class (Java 16+) for storing **immutable data** with minimal code.
-
-From your professor's slides:
 ```java
-public record Student(String name, int id) {}
-```
-
-This ONE line automatically creates:
-- Private final fields
-- Constructor
-- Getters (name(), id())
-- equals(), hashCode(), toString()
-
-### Equivalent Regular Class
-
-**Without record (lots of code):**
-```java
-public class Student {
-    private final String name;
-    private final int id;
+public class Task {
+    // 1. Private fields (hide state)
+    private String description;
+    private boolean completed;
     
-    public Student(String name, int id) {
-        this.name = name;
-        this.id = id;
+    // 2. Constructor (initialize and validate)
+    public Task(String description) {
+        if (description == null || description.isBlank()) {
+            throw new IllegalArgumentException(
+                "Description cannot be null or blank"
+            );
+        }
+        this.description = description;
+        this.completed = false;
     }
     
-    public String getName() {
-        return name;
+    // 3. Getters (careful, intentional access)
+    public String getDescription() {
+        return description;
     }
     
-    public int getId() {
-        return id;
+    public boolean isCompleted() {
+        return completed;
     }
     
-    @Override
-    public boolean equals(Object obj) {
-        // ... lots of code
+    // 4. Meaningful behavior (not generic setters)
+    public void markCompleted() {
+        completed = true;
     }
     
-    @Override
-    public int hashCode() {
-        // ... more code
+    public void rename(String newDescription) {
+        if (newDescription == null || newDescription.isBlank()) {
+            throw new IllegalArgumentException(
+                "Description cannot be null or blank"
+            );
+        }
+        this.description = newDescription;
     }
     
-    @Override
-    public String toString() {
-        return "Student[name=" + name + ", id=" + id + "]";
+    // 5. Private helper methods
+    private void validateDescription(String desc) {
+        if (desc == null || desc.isBlank()) {
+            throw new IllegalArgumentException(
+                "Description cannot be null or blank"
+            );
+        }
     }
 }
 ```
 
-**With record (one line!):**
+**This class demonstrates:**
+- ✅ Encapsulation (private fields)
+- ✅ Constructor with validation
+- ✅ Invariants enforced (description never null/blank)
+- ✅ Meaningful methods instead of setters
+- ✅ Fail-fast validation
+- ✅ Clear responsibilities
+
+---
+
+## Constructor Overloading
+
+
 ```java
-public record Student(String name, int id) {}
+public class Person {
+    private String name;
+    private int age;
+    private String email;
+    
+    // Constructor 1: All parameters
+    public Person(String name, int age, String email) {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("Name cannot be blank");
+        }
+        if (age < 0) {
+            throw new IllegalArgumentException("Age cannot be negative");
+        }
+        this.name = name;
+        this.age = age;
+        this.email = email;
+    }
+    
+    // Constructor 2: No email
+    public Person(String name, int age) {
+        this(name, age, "");  // Calls first constructor
+    }
+    
+    // Constructor 3: Just name
+    public Person(String name) {
+        this(name, 0, "");  // Calls first constructor
+    }
+}
 ```
 
-### Using Records
-
+**Using them:**
 ```java
-public record Point(int x, int y) {}
-
-// Create a record
-Point p1 = new Point(5, 10);
-
-// Access fields (note: no "get" prefix!)
-System.out.println(p1.x());  // 5
-System.out.println(p1.y());  // 10
-
-// toString() is automatic
-System.out.println(p1);  // Point[x=5, y=10]
-
-// Records are immutable
-// p1.x = 20;  // ❌ ERROR! No setters!
+Person p1 = new Person("Alice", 25, "alice@email.com");
+Person p2 = new Person("Bob", 30);
+Person p3 = new Person("Charlie");
 ```
 
-### When to Use Records
+---
 
-✅ **Use records for:**
-- Simple data carriers
-- Immutable data
-- DTOs (Data Transfer Objects)
-- Configuration objects
+## Summary: Key Principles from This Week's Slides
 
-❌ **Don't use records for:**
-- Objects that need to change (mutable)
-- Complex business logic
-- Objects with many behaviors
+### 1. What Is a Class?
+- Represents a domain concept
+- Bundles data and behavior
+- Protects internal state
 
-**Note:** We'll revisit records later in the course. For now, focus on regular classes!
+### 2. Class Responsibilities
+- Know: What data does it have?
+- Do: What behavior does it provide?
+- NOT Do: What is outside its responsibility?
+
+### 3. Encapsulation
+- Hide internal state (private fields)
+- Expose behavior (public methods)
+- Control access through methods
+
+### 4. Access Modifiers
+- **private** - Default choice for fields
+- **public** - For class interface
+- **protected** - For subclasses (later)
+- **(default)** - Package-private
+
+### 5. Getters and Setters
+- Use getters intentionally, not automatically
+- Avoid setters - use meaningful methods instead
+- Example: `markCompleted()` > `setCompleted(true)`
+
+### 6. Constructors
+- Initialize object state
+- Enforce invariants
+- Run exactly once
+- Validate early (fail fast)
+
+### 7. Class Invariants
+- Rules that must ALWAYS be true
+- Not fields - constraints on fields
+- Examples: "balance never negative", "name never null"
+
+### 8. The `this` Keyword
+- Refers to current object
+- Disambiguates fields from parameters
+- Used for method chaining
+- Used to call other constructors
 
 ---
 
 ## Week 6 Practice Exercises
 
-### Exercise 1: Immutable Book
+### Exercise 1: BankAccount with Invariants
 
-Create an **immutable** `Book` class:
-- Fields: `title` (String), `author` (String), `isbn` (String), `pages` (int)
-- All fields should be `private final`
-- Constructor that initializes all fields with validation
-- Only getters, NO setters
-- Method `isLongBook()` that returns true if pages > 300
+Create a `BankAccount` class that maintains these invariants:
+- Account number is never null or empty
+- Owner is never null or empty  
+- Balance is never negative
+
+**Requirements:**
+```java
+public class BankAccount {
+    private String accountNumber;
+    private String owner;
+    private double balance;
+    
+    // Constructor - validate all parameters
+    // deposit() - adds money (positive amounts only)
+    // withdraw() - removes money (check sufficient balance)
+    // getBalance() - returns balance
+    // NO setBalance() method!
+}
+```
+
+**Invariants to enforce:**
+- `accountNumber` != null && !accountNumber.isBlank()
+- `owner` != null && !owner.isBlank()
+- `balance` >= 0
 
 **Test it:**
 ```java
-Book book = new Book("Java Programming", "John Doe", "123-456", 450);
-System.out.println(book.getTitle());
-System.out.println(book.isLongBook());  // true
+BankAccount acc = new BankAccount("12345", "Alice", 1000);
+acc.deposit(500);
+acc.withdraw(200);
+// acc.withdraw(2000); // Should not allow overdraft!
 ```
 
-### Exercise 2: BankAccount with Encapsulation
+### Exercise 2: Task Class (From Slides)
 
-Create a `BankAccount` class with proper encapsulation:
-- Private fields: `accountNumber`, `owner`, `balance`
-- Constructor that initializes all fields
-- Getters for all fields
-- NO direct setter for balance
-- Methods: `deposit(double amount)`, `withdraw(double amount)`
-- Validate that amounts are positive and withdrawals don't exceed balance
+Create the complete `Task` class from your professor's slides:
 
-### Exercise 3: Person with Multiple Constructors
+**Requirements:**
+```java
+public class Task {
+    private String description;
+    private boolean completed;
+    
+    // Constructor with validation
+    // getDescription()
+    // isCompleted()
+    // markCompleted()
+    // rename(String newDescription) - with validation
+}
+```
+
+**Invariant:** description is never null or blank
+
+**Test it:**
+```java
+Task task = new Task("Study Java");
+System.out.println(task.getDescription());
+task.markCompleted();
+System.out.println(task.isCompleted());
+task.rename("Master Java");
+```
+
+### Exercise 3: Person with Age Validation
 
 Create a `Person` class:
-- Private fields: `firstName`, `lastName`, `age`, `email`
-- Constructor 1: All four parameters
-- Constructor 2: Just firstName, lastName, age (email = "")
-- Constructor 3: Just firstName and lastName (age = 0, email = "")
-- Use constructor chaining
-- Getters and setters with validation
 
-### Exercise 4: Product Catalog
-
-Create a `Product` class:
-- Private fields: `id`, `name`, `price`, `quantity`
-- Constructor with all fields
-- Getters for all fields
-- Setter for price (validate > 0)
-- Methods:
-  - `restock(int amount)` - adds to quantity
-  - `sell(int amount)` - reduces quantity if available
-  - `getTotalValue()` - returns price * quantity
-  - `isInStock()` - returns true if quantity > 0
-
-### Exercise 5: Rectangle with Validation
-
-Create a `Rectangle` class with **strong encapsulation**:
-- Private fields: `width`, `height`
-- Constructor that validates width and height are positive
-- Getters only (immutable after creation)
-- Methods:
-  - `getArea()`
-  - `getPerimeter()`
-  - `isSquare()` - returns true if width == height
-  - `resize(double widthFactor, double heightFactor)` - returns NEW Rectangle
-
-### Exercise 6: Student Record (Using Record)
-
-If your Java version supports it (Java 16+), create a `StudentRecord`:
+**Requirements:**
 ```java
-public record StudentRecord(String name, int id, double gpa) {}
-```
-
-Test creating students and accessing their data.
-
----
-
-## Common Beginner Mistakes
-
-### 1. Making Everything Public
-
-```java
-// ❌ BAD
-public class Person {
-    public String name;
-    public int age;
-}
-
-// ✅ GOOD
 public class Person {
     private String name;
     private int age;
     
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    // Constructor with validation
+    // getName()
+    // getAge()
+    // haveBirthday() - increments age
+    // NO setAge() or setName()!
 }
 ```
 
-### 2. No Validation
+**Invariants:**
+- name is not null or empty
+- age >= 0
 
+**Test it:**
+```java
+Person person = new Person("Alice", 25);
+person.haveBirthday();
+System.out.println(person.getAge()); // 26
+```
+
+### Exercise 4: Product with Price Validation
+
+Create a `Product` class:
+
+**Requirements:**
+```java
+public class Product {
+    private String name;
+    private double price;
+    private int quantity;
+    
+    // Constructor with validation
+    // getName()
+    // getPrice()
+    // getQuantity()
+    // updatePrice(double newPrice) - validate positive
+    // restock(int amount) - adds to quantity
+    // sell(int amount) - reduces quantity if available
+    // isInStock() - returns true if quantity > 0
+}
+```
+
+**Invariants:**
+- name is not null or empty
+- price > 0
+- quantity >= 0
+
+### Exercise 5: Rectangle with Validation
+
+Create an immutable `Rectangle` class:
+
+**Requirements:**
+```java
+public class Rectangle {
+    private final double width;   // Can't change after creation!
+    private final double height;
+    
+    // Constructor with validation (positive dimensions)
+    // getWidth()
+    // getHeight()
+    // getArea()
+    // getPerimeter()
+    // isSquare()
+    // NO setters - this is immutable!
+}
+```
+
+**Invariants:**
+- width > 0
+- height > 0
+
+**Test it:**
+```java
+Rectangle rect = new Rectangle(5, 10);
+System.out.println(rect.getArea()); // 50
+System.out.println(rect.isSquare()); // false
+// rect.width = 20; // ❌ ERROR - final field!
+```
+
+---
+
+## Common Mistakes to Avoid
+
+### 1. Making Everything Public
 ```java
 // ❌ BAD
-public void setAge(int age) {
-    this.age = age;  // What if age is -5 or 200?
+public class Task {
+    public String description;
+    public boolean completed;
 }
 
 // ✅ GOOD
-public void setAge(int age) {
-    if (age >= 0 && age <= 120) {
-        this.age = age;
-    } else {
-        throw new IllegalArgumentException("Invalid age");
-    }
+public class Task {
+    private String description;
+    private boolean completed;
 }
 ```
 
-### 3. Forgetting `this` in Constructor
+### 2. No Validation in Constructor
+```java
+// ❌ BAD
+public Task(String description) {
+    this.description = description;  // What if null?
+}
 
+// ✅ GOOD
+public Task(String description) {
+    if (description == null || description.isBlank()) {
+        throw new IllegalArgumentException();
+    }
+    this.description = description;
+}
+```
+
+### 3. Using Generic Setters
+```java
+// ❌ BAD
+public void setCompleted(boolean completed) {
+    this.completed = completed;
+}
+
+// ✅ GOOD
+public void markCompleted() {
+    completed = true;
+}
+```
+
+### 4. Forgetting `this` When Needed
 ```java
 // ❌ CONFUSING
-public Person(String name) {
-    name = name;  // Which name?? Both are the parameter!
+public Task(String description) {
+    description = description;  // Which is which?
 }
 
 // ✅ CLEAR
-public Person(String name) {
-    this.name = name;  // this.name is the field
+public Task(String description) {
+    this.description = description;
 }
 ```
 
-### 4. Breaking Immutability
-
+### 5. Not Enforcing Invariants
 ```java
-// Trying to make immutable class:
-public class Point {
-    private final int x;
-    private final int y;
-    
-    // ❌ BAD - This breaks immutability!
-    public void setX(int x) {
-        this.x = x;  // ERROR! Can't modify final field
-    }
+// ❌ BAD - allows negative balance
+public void withdraw(double amount) {
+    balance -= amount;
 }
-```
 
-### 5. Returning Mutable Objects
-
-```java
-public class Person {
-    private Date birthDate;  // Date is mutable!
-    
-    // ❌ BAD - exposes internal mutable object
-    public Date getBirthDate() {
-        return birthDate;  // Caller can modify it!
-    }
-    
-    // ✅ GOOD - return a copy
-    public Date getBirthDate() {
-        return new Date(birthDate.getTime());
-    }
-}
-```
-
----
-
-## Design Principles Recap
-
-### Encapsulation
-- Hide data with `private`
-- Provide controlled access with methods
-- Validate all inputs
-
-### Constructor Design
-- Initialize all fields
-- Validate parameters
-- Use constructor overloading for flexibility
-- Use constructor chaining to avoid duplication
-
-### Immutability
-- Use `final` for fields that shouldn't change
-- No setters for immutable classes
-- Return new objects instead of modifying
-
-### Naming
-- Follow Java conventions
-- Be specific and clear
-- Use nouns for classes, verbs for methods
-
-### Avoid Anemic Objects
-- Put behavior with data
-- Don't create classes that are just data holders
-- Make objects responsible for their own operations
-
----
-
-## Week 6 Checklist
-
-By the end of this week, you should be able to:
-- [ ] Understand encapsulation and why it matters
-- [ ] Use `private` and `public` correctly
-- [ ] Write constructors with validation
-- [ ] Overload constructors
-- [ ] Chain constructors using `this()`
-- [ ] Write proper getters and setters
-- [ ] Create immutable classes using `final`
-- [ ] Follow Java naming conventions
-- [ ] Organize code with packages
-- [ ] Understand records (modern Java)
-- [ ] Avoid creating anemic objects
-- [ ] Complete all 6 practice exercises
-
----
-
-## Next Week Preview
-
-In Week 7, we'll learn:
-- **Object Relationships** - How objects work together
-- **Association, Aggregation, Composition**
-- **"Has-a" vs "Is-a" relationships**
-- **Object Collaboration** - Objects calling each other's methods
-- **UML Class Diagrams** - Visualizing relationships
-
----
-
-## Key Takeaways
-
-**Encapsulation:**
-- **Hide** data with private
-- **Control** access with methods
-- **Validate** everything
-
-**Constructors:**
-- **Initialize** objects properly
-- **Validate** from the start
-- **Chain** constructors to avoid duplication
-
-**Immutability:**
-- Use **final** for unchanging data
-- **No setters** for immutable objects
-- Return **new objects** instead of modifying
-
-**Naming:**
-- **PascalCase** for classes
-- **camelCase** for methods/variables
-- **UPPER_SNAKE_CASE** for constants
-- Be **specific** and **clear**
-
-**Design:**
-- **Behavior belongs with data**
-- Avoid **anemic objects** (zombie classes)
-- Think about **responsibilities**
-
----
-
-You've now learned the fundamental building blocks of professional Java OOP! These concepts (encapsulation, constructors, immutability) are used in EVERY Java application. Master them now and everything else will be easier! 🚀
-
-Ready for Week 7? Let me know when you've completed the Week 6 exercises!
+// ✅ GOOD - maintains invariant
+public void withdraw(double amount) {
+    if (amount > 0 && balance >= amount) {
+        balance -= amount;
