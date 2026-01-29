@@ -11,7 +11,7 @@
 What are the three core aspects of a class?
 
 A) Variables, methods, and constructors  
-B) Represents a domain concept, bundles data and behavior, protects internal state  
+B) ```Represents a domain concept, bundles data and behavior, protects internal state  ``
 C) Public fields, private methods, and protected constructors  
 D) Inheritance, polymorphism, and encapsulation  
 
@@ -22,7 +22,7 @@ Which access modifier is the MOST restrictive?
 
 A) public  
 B) protected  
-C) package-private (default)  
+C) ``package-private (default)  ``
 D) private  
 
 ---
@@ -41,7 +41,7 @@ D) A static method
 What does "fail fast" mean?
 
 A) Completing the program as quickly as possible  
-B) Detecting invalid input as early as possible and throwing an exception immediately  
+B)`` Detecting invalid input as early as possible and throwing an exception immediately  ``
 C) Using the fastest algorithm  
 D) Avoiding loops  
 
@@ -52,7 +52,7 @@ Which access modifier allows access in subclasses but NOT everywhere?
 
 A) public  
 B) private  
-C) protected  
+C) ``protected  ``
 D) package-private  
 
 ---
@@ -61,7 +61,7 @@ D) package-private
 What are the three principles of encapsulation?
 
 A) Abstraction, inheritance, polymorphism  
-B) Hide internal state, expose behavior, control access through methods  
+B)`` Hide internal state, expose behavior, control access through methods  ``
 C) Public methods, private fields, protected constructors  
 D) Variables, methods, and objects  
 
@@ -72,7 +72,7 @@ Why should fields be private by default?
 
 A) It makes code run faster  
 B) It's required by Java  
-C) Protects invariants, reduces coupling, enables safe refactoring  
+C)`` Protects invariants, reduces coupling, enables safe refactoring  ``
 D) It uses less memory  
 
 ---
@@ -81,7 +81,7 @@ D) It uses less memory
 What does the `this` keyword refer to?
 
 A) The parent class  
-B) The current object  
+B) ``The current object  ``
 C) The next object  
 D) A static variable  
 
@@ -91,7 +91,7 @@ D) A static variable
 Which is better design and why?
 
 A) `setCompleted(true)` - because setters are standard  
-B) `markCompleted()` - because it's more meaningful and intention-revealing  
+``B) `markCompleted()` - because it's more meaningful and intention-revealing  ``
 C) `completed = true` - because direct access is faster  
 D) `updateStatus(true)` - because it's generic  
 
@@ -107,7 +107,7 @@ public class Task {
 ```
 
 A) Missing constructor  
-B) Public fields: no validation, no control, breaks invariants, hard to refactor  
+``B) Public fields: no validation, no control, breaks invariants, hard to refactor `` 
 C) Should use int instead of boolean  
 D) Nothing is wrong  
 
@@ -118,25 +118,35 @@ D) Nothing is wrong
 ### Question 11
 **True or False:** An invariant is the same as a private field.
 
+False
+
 ---
 
 ### Question 12
 **True or False:** Getters are evil and should never be used.
+
+False
 
 ---
 
 ### Question 13
 **True or False:** Constructors should validate parameters to enforce invariants from the start.
 
+False
+
 ---
 
 ### Question 14
 **True or False:** Package-private (default) means accessible only within the same class.
 
+False
+
 ---
 
 ### Question 15
 **True or False:** Setters expose internal state and weaken encapsulation, so meaningful methods are preferred.
+
+True
 
 ---
 
@@ -150,6 +160,8 @@ public Task(String description) {
     description = description;
 }
 ```
+
+
 
 ---
 
