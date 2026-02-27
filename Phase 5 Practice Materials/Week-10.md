@@ -1,31 +1,43 @@
 # L5: Collections and Introduction to Generics
-**CMP_SC 3330 – Object-Oriented Programming | Dr. Ekincan Ufuktepe | University of Missouri – Columbia**
+**CMP_SC 3330 – Object-Oriented Programming**  
+Dr. Ekincan Ufuktepe | University of Missouri – Columbia
 
 ---
 
-## Why Collections Exist
+## Learning Goals
 
-Programs rarely manage just one object. We need structures to handle many tasks, many students, many bank accounts, etc.
+- Use core collection types
+- Explain `equals` and `hashCode`
+- Understand why generics exist
+- Avoid type safety bugs
+- Design safer object collections
 
-**The problem with arrays:**
-- Fixed size — you must declare how many elements upfront
-- Hard to manage
-- Limited built-in functionality
+---
+
+## Collections Framework
+
+### Why Collections Exist
+
+Programs rarely manage just one object. Examples: many tasks, many students, many bank accounts. We need structure.
+
+### The Problem With Arrays
+
+Arrays are fixed-size, hard to manage, and have limited functionality.
 
 ```java
-Task[] tasks = new Task[10]; // stuck at 10!
+Task[] tasks = new Task[10]; // stuck at 10 forever
 ```
 
----
+### The Collections Framework
 
-## The Collections Framework
+Provides dynamic resizing, powerful operations, and standardized interfaces.
 
-Java's Collections Framework solves array limitations by providing:
-- **Dynamic resizing** — grows as needed
-- **Powerful built-in operations** — add, remove, search, etc.
-- **Standardized interfaces** — consistent API across types
+**Key types:**
+- `ArrayList` – ordered, dynamic list
+- `HashSet` – unordered, no duplicates
+- `HashMap` – key-value pairs
 
-### Core Interface Hierarchy
+### Core Interfaces Hierarchy
 
 ```
 Collection (interface)
@@ -33,80 +45,87 @@ Collection (interface)
 │   └── ArrayList (class)
 └── Set (interface)
     └── HashSet (class)
-
-Map (separate hierarchy)
-└── HashMap (class)
 ```
 
----
+> **Note:** `Map` is separate from `Collection` but still part of the framework.
 
-## Core Collection Types
-
-### ArrayList — ordered, dynamic list
+### ArrayList Example
 
 ```java
 List<Task> tasks = new ArrayList<>();
+
 tasks.add(new Task("Study"));
 tasks.add(new Task("Sleep"));
 ```
 
-### HashSet — no duplicates allowed
+### Set Example
 
 ```java
 Set<String> names = new HashSet<>();
+
 names.add("Alice");
-names.add("Alice"); // ignored — only one "Alice" in the set
+names.add("Alice"); // duplicate — ignored
+// Output contains only one "Alice"
 ```
 
-### HashMap — key-value pairs
+### Map Example
 
 ```java
 Map<Integer, Task> tasks = new HashMap<>();
-tasks.put(1, new Task("Study"));
-tasks.get(1); // retrieves the Task with key 1
+// Stores key-value pairs (e.g., task ID → Task object)
 ```
 
-> **Note:** Collections store *references*, not copies of objects.
+### Collections Store References, Not Copies
+
+Collections hold references to objects, not copies of them. Remember: reference vs. value semantics.
 
 ---
 
-## equals and hashCode
+## `equals` and `hashCode`
 
 ### Why Equality Matters
 
-How does `HashSet` detect duplicates? It uses `equals`. The problem: **default `equals` compares memory addresses**, not content.
+How does `Set` detect duplicates? It uses `equals`. If you don't override it, you get the wrong behavior.
+
+### Default `equals` Behavior
+
+By default, `equals` compares **memory addresses** (reference equality):
 
 ```java
-new Task("Study") != new Task("Study") // two different objects in memory!
+new Task("Study") != new Task("Study") // true — different objects!
 ```
 
-This means two logically identical tasks would both be added to a `HashSet` — breaking the "no duplicates" guarantee.
+Two logically equal objects appear different, which breaks collection behavior.
 
-### The equals Contract
+### Overriding `equals`
 
-When you override `equals`, it must be:
-- **Reflexive** — `a.equals(a)` is always true
-- **Symmetric** — if `a.equals(b)`, then `b.equals(a)`
-- **Transitive** — if `a.equals(b)` and `b.equals(c)`, then `a.equals(c)`
-- **Consistent** — repeated calls return the same result
+Override `equals` to define **logical equality** (e.g., two Tasks are equal if their descriptions are equal).
 
-### Proper equals Implementation
+**Proper implementation:**
 
 ```java
 @Override
 public boolean equals(Object o) {
-    if (this == o) return true;               // same reference? definitely equal
-    if (!(o instanceof Task)) return false;   // wrong type? not equal
+    if (this == o) return true;
+    if (!(o instanceof Task)) return false;
     Task other = (Task) o;
-    return description.equals(other.description); // compare meaningful fields
+    return description.equals(other.description);
 }
 ```
 
-### hashCode
+### The `equals` Contract
 
-Hash-based collections (`HashSet`, `HashMap`) use `hashCode` to find the right "bucket" before calling `equals`.
+`equals` must be:
+- **Reflexive** – `x.equals(x)` is always true
+- **Symmetric** – if `x.equals(y)`, then `y.equals(x)`
+- **Transitive** – if `x.equals(y)` and `y.equals(z)`, then `x.equals(z)`
+- **Consistent** – repeated calls return the same result
 
-**The golden rule:** If two objects are equal (`equals` returns true), they **must** have the same `hashCode`.
+### `hashCode` Purpose
+
+Used by hash-based collections (`HashSet`, `HashMap`) to find objects quickly (bucket lookup).
+
+**The rule:** If two objects are equal via `equals`, they **must** return the same `hashCode`.
 
 ```java
 @Override
@@ -115,59 +134,77 @@ public int hashCode() {
 }
 ```
 
-### How HashSet Uses Both
+### How `HashSet` Uses Both
 
-1. Computes `hashCode` → finds the bucket
-2. Calls `equals` → confirms if it's actually a duplicate
+1. `hashCode()` → finds the right bucket
+2. `equals()` → confirms the object is actually the same
 
-**Common bug:** Overriding `equals` but *not* `hashCode` breaks `HashSet` — equal objects land in different buckets and duplicates slip through.
+### Common Mistake: Override `equals` But Not `hashCode`
+
+If you override only `equals`, `HashSet` breaks — equal objects land in different buckets and duplicates slip through.
 
 ---
 
 ## Generics and Type Safety
 
-### The Problem with Raw Collections
+### Why Generics Exist
 
-Without generics, you can accidentally add the wrong type:
+- Prevent **runtime** type errors
+- Enable **compile-time** safety
+
+### The Problem: Raw Collections
 
 ```java
-List tasks = new ArrayList();  // raw type — no type checking!
-tasks.add(new Task("Study"));
-tasks.add("Hello");            // a String sneaks in...
+List tasks = new ArrayList(); // raw — no type info
 
-Task t = (Task) tasks.get(1); // CRASH at runtime! ClassCastException
+tasks.add(new Task("Study"));
+tasks.add("Hello"); // compiles fine... but disaster ahead
+
+Task t = (Task) tasks.get(1); // 💥 ClassCastException at runtime
 ```
 
-This is a **runtime failure** — the bug only appears when the code runs.
-
-### Generics Fix This
-
-By parameterizing the collection with a type, the **compiler catches mistakes early**:
+### The Solution: Parameterized Collections
 
 ```java
 List<Task> tasks = new ArrayList<>();
+
 tasks.add(new Task("Study"));
-tasks.add("Hello"); // COMPILER ERROR — caught before the program runs!
+tasks.add("Hello"); // ❌ Compiler error — caught immediately!
 ```
+
+The compiler now enforces that only `Task` objects go in.
 
 ### Benefits of Generics
 
-- **Type safety** — errors caught at compile time, not runtime
-- **No casting needed** — `tasks.get(0)` returns a `Task`, not `Object`
-- **Self-documenting code** — `List<Task>` clearly expresses intent
+| Without Generics | With Generics |
+|-----------------|---------------|
+| Runtime crashes | Compile-time errors |
+| Manual casting required | No casting needed |
+| Unclear intent | Self-documenting code |
+
+### Generics Remove the Need for Casting
+
+```java
+// Without generics:
+Task t = (Task) tasks.get(0); // must cast
+
+// With generics:
+Task t = tasks.get(0); // no cast needed
+```
 
 ---
 
 ## Summary
 
-| Concept | Key Idea |
-|---|---|
-| Collections | Manage groups of objects with dynamic sizing and rich operations |
-| `ArrayList` | Ordered list, allows duplicates, dynamic sizing |
-| `HashSet` | Unordered, no duplicates, uses `equals` + `hashCode` |
-| `HashMap` | Key-value pairs, fast lookup |
-| `equals` | Defines logical equality; must follow the contract |
-| `hashCode` | Must be consistent with `equals`; used for bucket lookup |
-| Generics | Enforce type safety at compile time; eliminate unsafe casts |
+| Concept | Purpose |
+|---------|---------|
+| **Collections** | Manage groups of objects dynamically |
+| **`equals`** | Define logical equality between objects |
+| **`hashCode`** | Enable correct behavior in hash-based collections |
+| **Generics** | Provide compile-time type safety |
 
-> **Next up:** Generics deep dive
+> **Always override both `equals` and `hashCode` together** when using objects in `HashSet` or `HashMap`.
+
+---
+
+*Up next: Generics deep dive*
