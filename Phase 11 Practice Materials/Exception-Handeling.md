@@ -1,6 +1,3 @@
-Here are the markdown notes for L15:
-
-```markdown
 # L15 – Exception Handling
 **CMP_SC 3330 – Object-Oriented Programming**  
 Dr. Ekincan Ufuktepe | University of Missouri – Columbia
@@ -25,9 +22,9 @@ An exception is:
 
 ```
 Throwable
-├── Error             (serious system issues — don't catch)
-└── Exception         (recoverable problems)
-    └── RuntimeException
+├── Error                  (serious system issues — don't catch)
+└── Exception              (recoverable problems)
+    └── RuntimeException   (unchecked)
 ```
 
 - **Throwable** → root of all exceptions
@@ -41,7 +38,7 @@ Throwable
 
 | | Checked | Unchecked |
 |---|---|---|
-| When checked | Compile time | Runtime |
+| When checked | Compile time | Runtime only |
 | Must handle? | Yes | No |
 | Extends | `Exception` | `RuntimeException` |
 | Example | `IOException` | `NullPointerException`, `IllegalArgumentException` |
@@ -70,7 +67,7 @@ try {
 }
 ```
 
-> Catch more specific exceptions **first**, more general ones **last**.
+> Catch more **specific** exceptions first, more **general** ones last.
 
 ### finally Block
 
@@ -86,7 +83,7 @@ The `finally` block **always executes**, whether or not an exception occurred. U
 
 ## try-with-resources
 
-Automatically closes resources (implements `AutoCloseable`) when the block exits.
+Automatically closes resources (that implement `AutoCloseable`) when the block exits — no need for a manual `finally` close.
 
 ```java
 try (BufferedReader br = new BufferedReader(...)) {
@@ -121,9 +118,13 @@ if (desc == null || desc.isBlank()) {
 
 ### When NOT to Use Exceptions
 - Normal flow control
-- Expected behavior (use `if` checks instead)
+- Expected/anticipated behavior → use `if` checks instead
 
-### Bad Example – Swallowing an Exception
+---
+
+## Common Mistakes
+
+### Bad: Swallowing an Exception
 ```java
 try {
     list.get(10);
@@ -132,23 +133,28 @@ try {
 }
 ```
 
-### Good Design
-Check conditions instead of catching everything:
+### Good: Check conditions instead
 ```java
 if (index < list.size()) {
     list.get(index);
 }
 ```
 
+### Bad: Catching Too Broadly
+```java
+catch (Exception e) { ... }
+```
+
+### Better: Catch the specific type
+```java
+catch (IOException e) { ... }
+```
+
 ### Exception Messages Matter
+Always include a clear, descriptive message:
 ```java
 throw new IllegalArgumentException("Task description cannot be empty");
 ```
-
-### Catching Too Broadly
-| Bad | Better |
-|---|---|
-| `catch (Exception e)` | `catch (IOException e)` |
 
 ### Rethrowing Exceptions
 Convert a checked exception to unchecked when you can't handle it locally:
@@ -163,11 +169,13 @@ catch (IOException e) {
 ## Custom Exceptions
 
 ### Why Custom Exceptions?
-- Express **domain meaning** (e.g., `TaskNotFoundException` vs. generic `RuntimeException`)
+- Express **domain meaning** (e.g., `TaskNotFoundException` vs. a generic exception)
 - Improve readability
-- Enable better error handling
+- Enable better, targeted error handling
 
 ### Creating a Checked Custom Exception
+Extends `Exception` → caller **must** handle it.
+
 ```java
 public class InvalidTaskException extends Exception {
     public InvalidTaskException(String message) {
@@ -177,6 +185,8 @@ public class InvalidTaskException extends Exception {
 ```
 
 ### Creating an Unchecked Custom Exception
+Extends `RuntimeException` → used for programming errors; caller doesn't have to handle it.
+
 ```java
 public class TaskNotFoundException extends RuntimeException {
     public TaskNotFoundException(String msg) {
@@ -186,10 +196,11 @@ public class TaskNotFoundException extends RuntimeException {
 ```
 
 ### Checked vs. Unchecked Custom Exceptions
+
 | | Checked | Unchecked |
 |---|---|---|
 | Extends | `Exception` | `RuntimeException` |
-| Use when | Caller **must** handle it | Programming error |
+| Use when | Caller **must** handle it | Programming / logic error |
 
 ### Using a Custom Exception
 ```java
@@ -198,26 +209,36 @@ if (desc.isBlank()) {
 }
 ```
 
+### UML: Custom Exception Hierarchy
+```
+RuntimeException
+      ▲
+      │
+TaskNotFoundException
+```
+
 ---
 
 ## Anti-Patterns to Avoid
 
 An **anti-pattern** is a repeated bad habit that seems fine at first but causes problems later.
 
-- **Empty catch blocks** (swallowing exceptions) — hides bugs silently
-- **Catching `Throwable`** — too broad; catches `Error`s you shouldn't touch
-- **Using exceptions for control flow** — use `if` statements instead
+| Anti-Pattern | Why It's Bad |
+|---|---|
+| Empty catch block | Silently hides bugs ("swallowing" the exception) |
+| Catching `Throwable` | Too broad; catches `Error`s you should never touch |
+| Using exceptions for control flow | Use `if` statements instead; exceptions are for abnormal conditions |
 
 ---
 
 ## Summary
 
 - Exceptions represent abnormal conditions as objects
-- Java uses a hierarchy: `Throwable → Error / Exception → RuntimeException`
-- **Checked** exceptions must be handled; **unchecked** don't have to be
-- Use `try–catch–finally` and `try-with-resources` to handle exceptions safely
-- **Fail fast** — validate early, throw immediately
-- **Catch specific** exceptions, not broad ones
-- **Never swallow** exceptions silently
+- Java hierarchy: `Throwable → Error / Exception → RuntimeException`
+- **Checked** exceptions must be declared or handled at compile time; **unchecked** do not
+- Use `try–catch–finally` to handle exceptions and guarantee cleanup
+- Use `try-with-resources` to auto-close resources
+- **Fail fast** — validate early, throw immediately on bad input/state
+- **Catch specific** exception types, not broad ones
+- **Never swallow** exceptions with empty catch blocks
 - **Custom exceptions** add domain meaning and improve code clarity
-```
